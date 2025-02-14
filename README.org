@@ -1,0 +1,231 @@
+#+TITLE: C Programming: Basic Exercises
+
+This repository collects a set of programming exercise questions
+suitable for a first-course in C programming. The exercises are
+categorized according to language features needed to solve the
+programs.
+
+* Basic datatypes and control flow
+
+1. Compute the [[#absolute-value][absolute value]] of a given integer.
+2. [[#swap-nibbles][Swap two half-bytes]] (nibbles) of a ~uint8_t~.
+3. Write a single expression function to check whether a ~uint32_t~ [[#check-power-of-two][is a power of two]].
+4. Write a function to compute the ceiling of the [[#base-two-log][base-2 logarithm of an unsigned integer]].
+5. Write a function to [[#approximate-exponential-function][compute $e^x$ approximately]].
+6. Write a function to compute the [[#collatz-sequence-length][length of the collatz sequence]] of a given unsigned integer.
+   
+* Structs
+* Arrays and pointers
+* Dynamic memory allocation
+* Recursion
+
+* Solutions
+
+** Absolute value
+:PROPERTIES:
+:CUSTOM_ID: absolute-value
+:END:
+
+This can be done using an ~if~.
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+
+  int abs(int x)
+  {
+          if (x >= 0) return x;
+          return -x;
+  }
+
+  int main()
+  {
+          printf("|%d| = %d.\n", 5, abs(5));
+          printf("|%d| = %d.\n", -5, abs(-5));
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: |5| = 5.
+: |-5| = 5.
+
+The body of the ~if~ always returns. It is considered good practice in
+such cases to avoid writing an explicit ~else~.
+
+** Swap nibbles
+:PROPERTIES:
+:CUSTOM_ID: swap-nibbles
+:END:
+
+We use bitwise shift and or.
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  #include <stdint.h>
+
+  uint8_t swap_nibble(uint8_t x)
+  {
+          return (x << 4) | (x >> 4);
+  }
+
+  int main()
+  {
+          printf("swap_nibble(%02x) = %02x.\n", 0xad, swap_nibble(0xad));
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: swap_nibble(ad) = da.
+
+For an unsigned integer, all shifts shift in zeroes. For signed
+integers, right shift shifts in the most significant bit's value. So
+this code will not work if we replace unsigned with signed integers.
+
+** Check power of two
+:PROPERTIES:
+:CUSTOM_ID: check-power-of-two
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  #include <stdbool.h>
+
+  bool is_pow_2(unsigned int x)
+  {
+	  return x * !(x & (x - 1));
+  }
+
+  int main()
+  {
+	  printf("is_pow_2(%3u) = %s.\n",  24,  is_pow_2(24) ? "true" : "false");
+	  printf("is_pow_2(%3u) = %s.\n", 256, is_pow_2(256) ? "true" : "false");
+	  printf("is_pow_2(%3u) = %s.\n", 255, is_pow_2(255) ? "true" : "false");
+	  return 0;
+  }
+
+#+end_src
+
+#+RESULTS:
+: is_pow_2( 24) = false.
+: is_pow_2(256) = true.
+: is_pow_2(255) = false.
+
+** Base-two log
+:PROPERTIES:
+:CUSTOM_ID: base-two-log
+:END:
+
+We double a number repeatedly until it is not less than x. The number
+of repetitions is the answer.
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  #include <assert.h>
+
+  unsigned int log2ceil(unsigned int x)
+  {
+	  assert(x > 0);
+
+	  unsigned int p = 1;
+	  unsigned int r = 0;
+	  while (p < x) {
+		  p *= 2;
+		  ++r;
+	  }
+
+	  return r;
+  }
+
+  int main()
+  {
+	  printf("log2ceil(%u) = %u.\n", 19340, log2ceil(19340));
+	  printf("log2ceil(%u) = %u.\n", 16384, log2ceil(16384));
+	  return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: log2ceil(19340) = 15.
+: log2ceil(16384) = 14.
+
+The variables ~p~ and ~r~ satisfy the property: $2^r = p$, at the
+beginning and at the end of each iteration of the loop. Such
+properties are called loop invariants. When the loop is terminated, we
+have either:
+- $p = x$: We know $2^r = p$, so ~r~ must be the answer. or,
+- $p > x$: We know $p/2 < x$, so we know $2^{r-1} < x$ and $2^r >
+  x$. Again, ~r~ must be the answer.
+
+** Approximate exponential function
+:PROPERTIES:
+:CUSTOM_ID: approximate-exponential-function
+:END:
+
+We use the Maclaurin series of the exponential function. Here we take
+a fixed number of terms. A better approach is to detect and stop the
+loop when the terms become insignificant.
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+
+  double e(double x)
+  {
+          const size_t N = 20;
+
+          double r = 1.0;
+
+          for (size_t i = N; i >= 1; --i) {
+                  r = 1 + x/i * r;
+          }
+
+          return r;
+  }
+
+  int main()
+  {
+          printf("e(%.2lf) = %.2lf.\n", 3.0, e(3.0));
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: e(3.00) = 20.09.
+
+** Collatz sequence length
+:PROPERTIES:
+:CUSTOM_ID: collatz-sequence-length
+:END:
+
+A number is odd if and only if its least significant bit is one. We
+keep a variable ~len~ each time we find a new element in the
+sequence. An ~assert~ ensures that ~n > 0~. The program exits
+immediately otherwise.
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  #include <assert.h>
+
+  size_t collatz_length(unsigned int n)
+  {
+          assert(n > 0);
+
+          size_t len = 1;
+
+          while (n != 1) {
+                  if (n & 1) n = 3*n + 1;
+                  else       n = n/2;
+                  ++len;
+          }
+
+          return len;
+  }
+
+  int main()
+  {
+          printf("collatz_length(%u) = %zu.\n", 2345, collatz_length(2345));
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: collatz_length(2345) = 152.
+
+Sometimes, it helps the reader when the code is aligned as the ~if~
+and ~else~ branches above. But don't overdo it.
