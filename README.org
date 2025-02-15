@@ -5,20 +5,26 @@ suitable for a first-course in C programming. The exercises are
 categorized according to language features needed to solve the
 programs.
 
-* Basic datatypes and control flow
+* Questions
 
 1. Compute the [[#absolute-value][absolute value]] of a given integer.
 2. [[#swap-nibbles][Swap two half-bytes]] (nibbles) of a ~uint8_t~.
-3. Write a single expression function to check whether a ~uint32_t~ [[#check-power-of-two][is a power of two]].
-4. Write a function to compute the ceiling of the [[#base-two-log][base-2 logarithm of an unsigned integer]].
+3. Write a single expression function to check whether a ~uint32_t~ [[#check-power-of-two][is
+   a power of two]].
+4. Write a function to compute the ceiling of the [[#base-two-log][base-2 logarithm of
+   an unsigned integer]].
 5. Write a function to [[#approximate-exponential-function][compute $e^x$ approximately]].
-6. Write a function to compute the [[#collatz-sequence-length][length of the collatz sequence]] of a given unsigned integer.
-   
-* Structs
-* Arrays and pointers
-* Dynamic memory allocation
-* Recursion
-
+6. Write a function to compute the [[#collatz-sequence-length][length of the collatz sequence]] of a
+   given unsigned integer.
+7. Define a ~struct point~ and a [[#point][function to compute the square of the
+   distance from origin]].
+8. Given an array of integers and a target, check whether there are
+   [[#target-sum][two elements in the array that sum to the target]].
+9. Given an array and a value, [[#remove-element-from-array][move all elements with that value to
+   the end of the array and return the the length of sub-array not
+   containing that value]].
+10. From a [[#remove-duplicates-from-sorted-array][sorted array, remove all duplicates]].
+       
 * Solutions
 
 ** Absolute value
@@ -91,15 +97,15 @@ this code will not work if we replace unsigned with signed integers.
 
   bool is_pow_2(unsigned int x)
   {
-	  return x * !(x & (x - 1));
+          return x * !(x & (x - 1));
   }
 
   int main()
   {
-	  printf("is_pow_2(%3u) = %s.\n",  24,  is_pow_2(24) ? "true" : "false");
-	  printf("is_pow_2(%3u) = %s.\n", 256, is_pow_2(256) ? "true" : "false");
-	  printf("is_pow_2(%3u) = %s.\n", 255, is_pow_2(255) ? "true" : "false");
-	  return 0;
+          printf("is_pow_2(%3u) = %s.\n",  24,  is_pow_2(24) ? "true" : "false");
+          printf("is_pow_2(%3u) = %s.\n", 256, is_pow_2(256) ? "true" : "false");
+          printf("is_pow_2(%3u) = %s.\n", 255, is_pow_2(255) ? "true" : "false");
+          return 0;
   }
 
 #+end_src
@@ -122,23 +128,23 @@ of repetitions is the answer.
 
   unsigned int log2ceil(unsigned int x)
   {
-	  assert(x > 0);
+          assert(x > 0);
 
-	  unsigned int p = 1;
-	  unsigned int r = 0;
-	  while (p < x) {
-		  p *= 2;
-		  ++r;
-	  }
+          unsigned int p = 1;
+          unsigned int r = 0;
+          while (p < x) {
+                  p *= 2;
+                  ++r;
+          }
 
-	  return r;
+          return r;
   }
 
   int main()
   {
-	  printf("log2ceil(%u) = %u.\n", 19340, log2ceil(19340));
-	  printf("log2ceil(%u) = %u.\n", 16384, log2ceil(16384));
-	  return 0;
+          printf("log2ceil(%u) = %u.\n", 19340, log2ceil(19340));
+          printf("log2ceil(%u) = %u.\n", 16384, log2ceil(16384));
+          return 0;
   }
 #+end_src
 
@@ -229,3 +235,149 @@ immediately otherwise.
 
 Sometimes, it helps the reader when the code is aligned as the ~if~
 and ~else~ branches above. But don't overdo it.
+
+** Point
+:PROPERTIES:
+:CUSTOM_ID: point
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  
+  struct point
+  {
+          double x, y;
+  };
+
+  double l2_sq(struct point p)
+  {
+          return p.x*p.x + p.y*p.y;
+  }
+
+  int main()
+  {
+          printf("%.2lf\n", l2_sq((struct point) { .x = 2.0, .y = 3.0 }));
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: 13.0
+
+
+** Target sum
+:PROPERTIES:
+:CUSTOM_ID: target-sum
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  
+  struct pair
+  {
+          ssize_t i, j;
+  };
+
+  struct pair sum2(int xs[], size_t n, int t)
+  {
+          for (size_t i = 0; i < n; ++i)
+                  for (size_t j = i+1; j < n; ++j)
+                          if (xs[i] + xs[j] == t)
+                                  return (struct pair) { i, j };
+          return (struct pair) { -1, -1 };
+  }
+
+  int main()
+  {
+          int xs[] = { 2, 9, 1, -5, 3, 10, 13 };
+          struct pair p = sum2(xs, 7, 8);
+
+          if (p.i >= 0 && p.j >= 0)
+                  printf("8 = %d + %d.\n", xs[p.i], xs[p.j]);
+
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: 8 = -5 + 13.
+
+** Remove element from array
+:PROPERTIES:
+:CUSTOM_ID: remove-element-from-array
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+
+  size_t rem(int xs[], size_t n, int v)
+  {
+          size_t i = 0, j = n-1;
+
+          while (1) {
+                  while (i < n  && xs[i] != v) ++i;
+                  while (j >= 0 && xs[j] == v) --j;
+                  if (i >= j) return i;
+                  int t = xs[i];
+                  xs[i] = xs[j];
+                  xs[j] = t;
+          }
+  }
+
+  int main()
+  {
+          int xs[] = { 2, 1, 5, 4, 3, 4, 9, 1, 4, 3, 4, 4 };
+          size_t r = rem(xs, sizeof(xs)/sizeof(xs[0]), 4);
+          printf("(");
+          for (size_t i = 0; i < r; ++i)
+                  printf("%d, ", xs[i]);
+          printf(")\n");
+          return 0;
+        
+  }
+#+end_src
+
+#+RESULTS:
+: (2, 1, 5, 3, 3, 1, 9, )
+
+** Remove duplicates from sorted array
+:PROPERTIES:
+:CUSTOM_ID: remove-duplicates-from-sorted-array
+:END:
+
+
+
+We do this in-place. We keep two indices into the array:
+- ~i~ is the next position in the array to be filled.
+- ~j~ is used to look for the next distinct element.
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+
+  size_t uniq(int xs[], size_t n)
+  {
+          if (n == 0) return 0;
+
+          size_t i = 1, j = 1;
+          while (j < n) {
+                  while (j < n && xs[j] == xs[j-1]) ++j;
+                  if (j < n) xs[i++] = xs[j++];
+          }
+          return i;
+  }
+
+  int main()
+  {
+          int xs[] = { 1, 1, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6 };
+          size_t r = uniq(xs, sizeof(xs)/sizeof(xs[0]));
+          printf("(");
+          for (size_t i = 0; i < r; ++i) {
+                  printf("%d, ", xs[i]);
+          }
+          printf(")\n");
+
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: (1, 2, 3, 4, 5, 6, )
