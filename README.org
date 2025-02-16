@@ -18,16 +18,18 @@ programs.
    given unsigned integer.
 7. Define a ~struct point~ and a [[#point][function to compute the square of the
    distance from origin]].
-8. Given an array of integers and a target, check whether there are
+8. [[#rot-k-encoding][Rot-k encode]] a given string. Only rotate the letters. Preserve
+   letter-case.
+9. Given an array of integers and a target, check whether there are
    [[#target-sum][two elements in the array that sum to the target]].
-9. Given an array and a value, [[#remove-element-from-array][move all elements with that value to
-   the end of the array and return the the length of sub-array not
-   containing that value]].
-10. From a [[#remove-duplicates-from-sorted-array][sorted array, remove all duplicates]].
-11. [[#partition-array][Partition an array]].
-12. Compute the [[#prime-factorization][prime factorization]] of an ~int~.
-13. [[#generate-permutations][Generate all k-permutations]] of an n-element array.
-14. [[#generate-combinations][Generate all k-combinations]] of an n-element array.
+10. Given an array and a value, [[#remove-element-from-array][move all elements with that value to
+    the end of the array and return the length of sub-array not
+    containing that value]].
+11. From a [[#remove-duplicates-from-sorted-array][sorted array, remove all duplicates]].
+12. [[#partition-array][Partition an array]].
+13. Compute the [[#prime-factorization][prime factorization]] of an ~int~.
+14. [[#generate-permutations][Generate all k-permutations]] of an n-element array.
+15. [[#generate-combinations][Generate all k-combinations]] of an n-element array.
 
 * Solutions
 
@@ -267,6 +269,38 @@ and ~else~ branches above. But don't overdo it.
 
 #+RESULTS:
 : 13.0
+
+** Rot-k encoding
+:PROPERTIES:
+:CUSTOM_ID: rot-k-encoding
+:END:
+
+#+begin_src C
+  #include <stdio.h>
+
+  char *rotk(char *s, size_t k)
+  {
+          char *p = s;
+          while (*p) {
+                  switch(*p) {
+                  case 'a' ... 'z': *p = 'a' + (*p-'a'+k)%26; break;
+                  case 'A' ... 'Z': *p = 'A' + (*p-'A'+k)%26; break;
+                  }
+                  ++p;
+          }
+          return s;
+  }
+
+  int main()
+  {
+          char buf[] = "The quick brown fox jumped over the lazy dog.";
+          printf("%s\n", rotk(buf, 13));
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: Gur dhvpx oebja sbk whzcrq bire gur ynml qbt.
 
 ** Target sum
 :PROPERTIES:
@@ -621,3 +655,4 @@ We do this in-place. We keep two indices into the array:
 (2, 4, 5, )
 (3, 4, 5, )
 #+end_example
+
