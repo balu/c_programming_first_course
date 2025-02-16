@@ -24,7 +24,11 @@ programs.
    the end of the array and return the the length of sub-array not
    containing that value]].
 10. From a [[#remove-duplicates-from-sorted-array][sorted array, remove all duplicates]].
-       
+11. [[#partition-array][Partition an array]].
+12. Compute the [[#prime-factorization][prime factorization]] of an ~int~.
+13. [[#generate-permutations][Generate all k-permutations]] of an n-element array.
+14. [[#generate-combinations][Generate all k-combinations]] of an n-element array.
+
 * Solutions
 
 ** Absolute value
@@ -264,7 +268,6 @@ and ~else~ branches above. But don't overdo it.
 #+RESULTS:
 : 13.0
 
-
 ** Target sum
 :PROPERTIES:
 :CUSTOM_ID: target-sum
@@ -381,3 +384,240 @@ We do this in-place. We keep two indices into the array:
 
 #+RESULTS:
 : (1, 2, 3, 4, 5, 6, )
+
+** Partition an array
+:PROPERTIES:
+:CUSTOM_ID: partition-an-array
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  #include <stdbool.h>
+
+  size_t partition(int xs[], size_t n, bool (*f)(int x))
+  {
+          if (n == 0) return 0;
+
+          size_t i = 0, j = n-1;
+
+          while (1) {
+                  while (i < n  && !f(xs[i])) ++i;
+                  while (j >= 0 &&  f(xs[j])) --j;
+                  if (i >= j) break;
+                  int t = xs[i];
+                  xs[i] = xs[j];
+                  xs[j] = t;
+          }
+
+          return i;
+  }
+
+  bool is_even(int x)
+  {
+          return x % 2 == 0;
+  }
+
+  void print_array(int xs[], size_t n)
+  {
+          printf("(");
+          for (size_t i = 0; i < n; ++i) printf("%d, ", xs[i]);
+          printf(")\n");
+  }
+
+  int main()
+  {
+          int xs[] = { 4, 0, 3, 9, 1, 6, 4, 8 };
+          size_t n = sizeof(xs)/sizeof(xs[0]);
+          size_t p = partition(xs, n, is_even);
+          print_array(xs, p);
+          print_array(xs+p, n-p);
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: (1, 9, 3, )
+: (0, 4, 6, 4, 8, )
+
+** Prime factorization
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+  #include <stdlib.h>
+
+  int *prime_factorization(int n)
+  {
+          if (n <= 0) return NULL;
+
+          int *fs = malloc(8 * sizeof(int) * sizeof(int));
+          size_t i = 0;
+          size_t d = 2;
+          while (n > 1) {
+                  while (n%d == 0) {
+                          fs[i++] = d;
+                          n /= d;
+                  }
+                  ++d;
+          }
+          fs[i] = 0;
+          return fs;
+  }
+
+  void print_pf(int *fs)
+  {
+          if (*fs) printf("%d", *fs++);
+          while (*fs)
+                  printf(" * %d", *fs++);
+  }
+
+  int main()
+  {
+          int *p840 = prime_factorization(840);
+          print_pf(p840);
+          free(p840);
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+: 2 * 2 * 2 * 3 * 5 * 7
+
+** Generate permutations
+:PROPERTIES:
+:CUSTOM_ID: generate-permutations
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+
+  void swap(int *a, int *b)
+  {
+          int t = *a;
+          *a = *b;
+          *b = t;
+  }
+
+  void do_permutations (
+          int xs[], size_t n,
+          int perm[], size_t k, size_t k1,
+          void (*process)(int perm[], int k))
+  {
+          if (n < k1) return;
+
+          if (k1 == 0) {
+                  process(perm, k);
+                  return;
+          }
+
+          for (size_t i = 0; i < n; ++i) {
+                  swap(&xs[0], &xs[i]);
+                  perm[k-k1] = xs[0];
+                  do_permutations(xs+1, n-1, perm, k, k1-1, process);
+                  swap(&xs[0], &xs[i]);
+          }
+  }
+
+  void permutations (
+          int xs[], size_t n,
+          int perm[], size_t k,
+          void (*process)(int perm[], int k))
+  {
+          do_permutations(xs, n, perm, k, k, process);
+  }
+
+  void print_array(int xs[], size_t n)
+  {
+          printf("(");
+          for (size_t i = 0; i < n; ++i)
+                  printf("%d, ", xs[i]);
+          printf(")\n");
+  }
+
+  int main()
+  {
+          int xs[] = { 1, 2, 3, 4 };
+          int buf[2];
+          permutations(xs, 4, buf, 2, print_array);
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+#+begin_example
+(1, 2, )
+(1, 3, )
+(1, 4, )
+(2, 1, )
+(2, 3, )
+(2, 4, )
+(3, 2, )
+(3, 1, )
+(3, 4, )
+(4, 2, )
+(4, 3, )
+(4, 1, )
+#+end_example
+
+** Generate combinations
+:PROPERTIES:
+:CUSTOM_ID: generate-combinations
+:END:
+
+#+begin_src C :results output :exports both
+  #include <stdio.h>
+
+  void do_combinations (
+          int xs[], size_t n,
+          int comb[], size_t k, size_t k1,
+          void (*process)(int comb[], size_t k))
+  {
+          if (n < k1) return;
+
+          if (k1 == 0) {
+                  process(comb, k);
+                  return;
+          }
+
+          comb[k-k1] = xs[0];
+          do_combinations(xs+1, n-1, comb, k, k1-1, process);
+          do_combinations(xs+1, n-1, comb, k,   k1, process);
+  }
+
+  void combinations (
+          int xs[], size_t n,
+          int comb[], size_t k,
+          void (*process)(int comb[], size_t k))
+  {
+          do_combinations(xs, n, comb, k, k, process);
+  }
+
+  void print_array(int xs[], size_t n)
+  {
+          printf("(");
+          for (size_t i = 0; i < n; ++i)
+                  printf("%d, ", xs[i]);
+          printf(")\n");
+  }
+
+  int main()
+  {
+          int xs[] = { 1, 2, 3, 4, 5 };
+          int buf[3];
+          combinations(xs, 5, buf, 3, print_array);
+          return 0;
+  }
+#+end_src
+
+#+RESULTS:
+#+begin_example
+(1, 2, 3, )
+(1, 2, 4, )
+(1, 2, 5, )
+(1, 3, 4, )
+(1, 3, 5, )
+(1, 4, 5, )
+(2, 3, 4, )
+(2, 3, 5, )
+(2, 4, 5, )
+(3, 4, 5, )
+#+end_example
